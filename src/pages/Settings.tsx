@@ -5,14 +5,35 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Badge } from '../components/ui/Badge';
 import { RefreshCw, Shield, Database, Key, Sparkles } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Modal } from '../components/ui/Modal';
+
+
 
 export function Settings() {
-  const { currentUser, currentWorkspace, currentRole, resetDemo, state, updateWorkspace } = useStore();
+  const { currentUser, currentWorkspace, currentRole, resetDemo, state, updateWorkspace, updateProfile, deleteAccount } = useStore();
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [wsName, setWsName] = useState(currentWorkspace?.name || '');
   const [wsDesc, setWsDesc] = useState(currentWorkspace?.description || '');
+  const [profileName, setProfileName] = useState(currentUser?.name || '');
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileSaved, setProfileSaved] = useState(false);
+  const [profileError, setProfileError] = useState('');
+
+  const handleSaveProfile = async () => {
+    setProfileError('');
+    setProfileSaving(true);
+    const res = await updateProfile(profileName.trim());
+    setProfileSaving(false);
+    if (!res.ok) {
+      setProfileError(res.error || 'Failed to save');
+      return;
+    }
+    setProfileSaved(true);
+    setTimeout(() => setProfileSaved(false), 2000);
+  };
   const [refreshing, setRefreshing] = useState(false);
   const [refreshed, setRefreshed] = useState(false);
 
@@ -27,6 +48,24 @@ export function Settings() {
     }
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
+  };
+
+  const navigate = useNavigate();
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleteError, setDeleteError] = useState('');
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDeleteAccount = async () => {
+    setDeleteError('');
+    setDeleting(true);
+    const res = await deleteAccount();
+    setDeleting(false);
+    if (!res.ok) {
+      setDeleteError(res.error || 'Failed to delete account');
+      return;
+    }
+    navigate('/login');
   };
 
   const handleRefresh = async () => {
@@ -62,8 +101,22 @@ export function Settings() {
           </div>
         </div>
         <div className="grid gap-3 pt-2 sm:grid-cols-2">
-          <Input label="Display name" defaultValue={currentUser?.name} />
+          <Input
+            label="Display name"
+            value={profileName}
+            onChange={(e) => setProfileName(e.target.value)}
+          />
           <Input label="Email" defaultValue={currentUser?.email} disabled />
+        </div>
+        <div className="flex items-center justify-end gap-3">
+          {profileError && <span className="text-xs text-red-600">{profileError}</span>}
+          <Button
+            size="sm"
+            onClick={handleSaveProfile}
+            disabled={profileSaving || profileName.trim() === currentUser?.name}
+          >
+            {profileSaving ? 'Saving…' : profileSaved ? 'Saved!' : 'Save changes'}
+          </Button>
         </div>
       </Card>
 
@@ -133,7 +186,7 @@ export function Settings() {
           ))}
         </div>
       </Card>
-
+          
       <Card className="p-5">
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
           <div>
@@ -147,6 +200,68 @@ export function Settings() {
           </Button>
         </div>
       </Card>
+
+      <Card className="border-red-200 p-5">
+        <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+          <div>
+            <h2 className="font-semibold text-red-700">Delete account</h2>
+            <p className="mt-1 text-xs text-[#96978f]">
+              Permanently delete your account and everything tied to it. This can't be undone.
+            </p>
+          </div>
+          <Button variant="danger" size="sm" onClick={() => setDeleteOpen(true)}>
+            Delete my account
+          </Button>
+        </div>
+      </Card>
+
+      <Modal
+        open={deleteOpen}
+        onClose={() => {
+          setDeleteOpen(false);
+          setDeleteConfirmText('');
+          setDeleteError('');
+        }}
+        title="Delete your account"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-[#74766f]">
+            This permanently deletes your account, your conversations, and any workspace you're
+            the sole member of. If you own a workspace with other members, you'll need to
+            transfer ownership or remove them first.
+          </p>
+          <div>
+            <label className="text-xs font-medium text-[#74766f]">
+              Type <span className="font-semibold text-red-700">DELETE</span> to confirm
+            </label>
+            <input
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-[#e4e5df] px-3 py-2 text-sm outline-none focus:border-red-300 focus:ring-2 focus:ring-red-100"
+              placeholder="DELETE"
+            />
+          </div>
+          {deleteError && (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {deleteError}
+            </div>
+          )}
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setDeleteOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={handleDeleteAccount}
+              disabled={deleteConfirmText !== 'DELETE'}
+              loading={deleting}
+            >
+              Permanently delete
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

@@ -105,6 +105,7 @@ interface StoreContextValue {
   setWorkspace: (id: string) => void;
   createWorkspace: (name: string, description: string) => Promise<Workspace | null>;
   updateWorkspace: (name: string, description: string) => Promise<{ ok: boolean; error?: string }>;
+  updateProfile: (name: string) => Promise<{ ok: boolean; error?: string }>;
   uploadDocument: (file: File, textContent: string, tags?: string[]) => Promise<Document>;
   deleteDocument: (id: string) => void;
   askQuestion: (chatId: string | null, question: string) => Promise<ChatSession>;
@@ -120,6 +121,7 @@ interface StoreContextValue {
   markNotificationRead: (id: string) => Promise<void>;
   markAllNotificationsRead: () => Promise<void>;
   resetDemo: () => Promise<void>;
+  deleteAccount: () => Promise<{ ok: boolean; error?: string }>;
   teamActivity: AppNotification[];
 }
 
@@ -466,6 +468,23 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  async function updateProfile(name: string) {
+    try {
+      const updated = await api.patch<{ id: string; name: string; email: string; avatar: string | null }>(
+        '/api/auth/me',
+        { name }
+      );
+      setState((s) => ({
+        ...s,
+        session: s.session ? { ...s.session, user: { ...s.session.user, name: updated.name } } : s.session,
+        users: s.users.map((u) => (u.id === updated.id ? { ...u, name: updated.name } : u)),
+      }));
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: e instanceof ApiError ? e.message : 'Failed to update profile' };
+    }
+  }
+
   async function updateWorkspace(name: string, description: string) {
     const workspaceId = state.currentWorkspaceId;
     if (!workspaceId) return { ok: false, error: 'No active workspace' };
@@ -580,7 +599,8 @@ function deleteChat(id: string) {
         semantic: result.semantic.map((r) => ({ ...r, score: r.similarity })),
         keyword: result.keyword.map((r) => ({ ...r, score: r.rank })),
       };
-    } catch {
+    } catch (e) {
+      console.error('Search failed:', e instanceof ApiError ? e.message : e);
       return { keyword: [], semantic: [] };
     }
   }
@@ -634,7 +654,7 @@ function deleteChat(id: string) {
       }));
       const confidence = result.sources.length
         ? result.sources.reduce((sum, s) => sum + s.similarity, 0) / result.sources.length
-        : 0;
+        : undefined;
 
       const assistantMsg: ChatMessage = {
         id: uid('msg'),
@@ -732,6 +752,17 @@ function deleteChat(id: string) {
     }
   }
 
+  async function deleteAccount() {
+    try {
+      await api.delete('/api/auth/me');
+      clearToken();
+      setState(emptyState);
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: e instanceof ApiError ? e.message : 'Failed to delete account' };
+    }
+  }
+
   async function resetDemo() {
     if (state.currentWorkspaceId && currentUser) {
       await loadWorkspaceData(state.currentWorkspaceId, currentUser.id);
@@ -802,6 +833,7 @@ function deleteChat(id: string) {
     createWorkspace,
     uploadDocument,
     updateWorkspace,
+    updateProfile,
     deleteDocument,
     askQuestion,
     createChat,
@@ -816,6 +848,7 @@ function deleteChat(id: string) {
     markNotificationRead,
     markAllNotificationsRead,
     resetDemo,
+    deleteAccount,
     teamActivity,
   };
 
