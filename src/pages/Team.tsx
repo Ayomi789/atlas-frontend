@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { UserPlus, Shield, Trash2 } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { UserPlus, Shield, Trash2, ChevronDown, Check } from 'lucide-react';
+import { cn } from '../lib/utils';
 import { useStore } from '../lib/store';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
@@ -15,6 +16,71 @@ const roleColor: Record<Role, 'amber' | 'indigo' | 'cyan' | 'slate'> = {
   member: 'cyan',
   viewer: 'slate',
 };
+
+function RoleSelect({
+  value,
+  onChange,
+  options,
+  className,
+}: {
+  value: Role;
+  onChange: (role: Role) => void;
+  options: Role[];
+  className?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  const toggleOpen = () => {
+    if (!open && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setCoords({ top: rect.bottom + 4, left: rect.left, width: rect.width });
+    }
+    setOpen((o) => !o);
+  };
+
+  return (
+    <div className={cn('relative', className)}>
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={toggleOpen}
+        className="flex w-full items-center justify-between gap-2 rounded-lg border border-[#e4e5df] bg-white px-3 py-1.5 text-xs capitalize text-[#555851] transition hover:border-[#d8e3d8] focus:outline-none focus:ring-2 focus:ring-[#dce9dd]"
+      >
+        {value}
+        <ChevronDown className={cn('h-3.5 w-3.5 text-[#96978f] transition', open && 'rotate-180')} />
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div
+            style={{ top: coords.top, left: coords.left, width: coords.width }}
+            className="fixed z-50 min-w-[110px] overflow-hidden rounded-lg border border-[#e7e7e2] bg-white shadow-lg"
+          >
+            {options.map((opt) => (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => {
+                  onChange(opt);
+                  setOpen(false);
+                }}
+                className={cn(
+                  'flex w-full items-center justify-between px-3 py-2 text-left text-xs capitalize transition',
+                  opt === value ? 'bg-[#e7eee6] text-[#294637]' : 'text-[#555851] hover:bg-[#f7f7f5]'
+                )}
+              >
+                {opt}
+                {opt === value && <Check className="h-3 w-3" />}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 export function Team() {
   const {
@@ -99,15 +165,12 @@ export function Team() {
                   </td>
                   <td className="px-5 py-3.5">
                     {canManage && m.role !== 'owner' ? (
-                      <select
+                      <RoleSelect
                         value={m.role}
-                        onChange={(e) => updateMemberRole(m.id, e.target.value as Role)}
-                        className="rounded-lg border border-[#e4e5df] bg-white px-2 py-1 text-xs text-[#555851] outline-none"
-                      >
-                        <option value="admin">admin</option>
-                        <option value="member">member</option>
-                        <option value="viewer">viewer</option>
-                      </select>
+                        onChange={(role) => updateMemberRole(m.id, role)}
+                        options={['admin', 'member', 'viewer']}
+                        className="w-28"
+                      />
                     ) : (
                       <Badge color={roleColor[m.role]}>
                         <Shield className="h-3 w-3" /> {m.role}
@@ -151,9 +214,7 @@ export function Team() {
 
       <Modal open={open} onClose={() => setOpen(false)} title="Invite member">
         <div className="space-y-4">
-          <p className="text-xs text-[#96978f]">
-            User must already have a Atlas account. Try: jordan@acme.dev, sam@acme.dev
-          </p>
+          <p className="text-xs text-[#96978f]">User must already have an Atlas account.</p>
           <Input
             label="Email"
             type="email"
@@ -163,15 +224,7 @@ export function Team() {
           />
           <div>
             <label className="mb-1.5 block text-sm font-medium text-[#555851]">Role</label>
-            <select
-              value={role}
-              onChange={(e) => setRole(e.target.value as Role)}
-              className="w-full rounded-lg border border-[#e4e5df] bg-[#fcfcfb] px-3 py-2.5 text-sm outline-none focus:border-[#789483] focus:ring-2 focus:ring-[#dce9dd]"
-            >
-              <option value="admin">Admin</option>
-              <option value="member">Member</option>
-              <option value="viewer">Viewer</option>
-            </select>
+            <RoleSelect value={role} onChange={setRole} options={['admin', 'member', 'viewer']} className="w-full" />
           </div>
           {error && (
             <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">

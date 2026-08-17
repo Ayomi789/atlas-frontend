@@ -90,11 +90,10 @@ export function Landing() {
             </Link>
             <Link to="/login">
               <Button size="lg" variant="outline" className="min-w-[170px]">
-                Try live demo
+                Sign in
               </Button>
             </Link>
           </div>
-          <p className="mt-4 text-xs text-[#96978f]">Demo: demo@knowhub.app / demo1234</p>
         </motion.div>
 
         <motion.div
@@ -176,10 +175,11 @@ export function Landing() {
           <div className="grid items-center gap-10 md:grid-cols-2">
             <div>
               <p className="text-xl font-semibold leading-relaxed tracking-[-.03em] text-[#22231f]">
-                "Instead of saying 'I know LangChain' — you'll actually have built something with
-                RAG, vectors, and multi-tenant auth."
+                Built on the same foundations serious AI products run on — vector search,
+                strict access control, and answers grounded only in what you've actually
+                uploaded.
               </p>
-              <p className="mt-3 text-sm text-[#74766f]">The portfolio project that stands out</p>
+              <p className="mt-3 text-sm text-[#74766f]">No black boxes. No hallucinated answers.</p>
             </div>
             <div className="grid grid-cols-2 gap-3">
               {[

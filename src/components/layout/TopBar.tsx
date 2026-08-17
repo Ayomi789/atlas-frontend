@@ -29,6 +29,7 @@ export function TopBar() {
     unreadNotificationCount,
     markNotificationRead,
     markAllNotificationsRead,
+    clearAllNotifications,
   } = useStore();
   const navigate = useNavigate();
   const [wsOpen, setWsOpen] = useState(false);
@@ -39,9 +40,7 @@ export function TopBar() {
   const [helpOpen, setHelpOpen] = useState(false);
 
   
-  const userWorkspaces = state.workspaces.filter((w) =>
-    state.members.some((m) => m.workspaceId === w.id && m.userId === currentUser?.id)
-  );
+  const userWorkspaces = state.workspaces;
 
   const notify = (msg: string) => {
     setNotice(msg);
@@ -143,14 +142,24 @@ export function TopBar() {
                   <div className="absolute right-0 top-full z-50 mt-2 w-80 max-w-[90vw] overflow-hidden rounded-xl border border-[#e7e7e2] bg-white shadow-lg">
                     <div className="flex items-center justify-between border-b border-[#ecece8] px-4 py-3">
                       <h3 className="text-sm font-semibold text-[#22231f]">Notifications</h3>
-                      {unreadNotificationCount > 0 && (
-                        <button
-                          onClick={() => markAllNotificationsRead()}
-                          className="text-xs font-medium text-[#385847] hover:underline"
-                        >
-                          Mark all read
-                        </button>
-                      )}
+                      <div className="flex items-center gap-3">
+                        {unreadNotificationCount > 0 && (
+                          <button
+                            onClick={() => markAllNotificationsRead()}
+                            className="text-xs font-medium text-[#385847] hover:underline"
+                          >
+                            Mark all read
+                          </button>
+                        )}
+                        {notifications.length > 0 && (
+                          <button
+                            onClick={() => clearAllNotifications()}
+                            className="text-xs font-medium text-[#96978f] hover:underline"
+                          >
+                            Clear all
+                          </button>
+                        )}
+                      </div>
                     </div>
                     <div className="max-h-80 overflow-y-auto">
                       {notifications.length === 0 ? (

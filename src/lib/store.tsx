@@ -120,6 +120,7 @@ interface StoreContextValue {
   unreadNotificationCount: number;
   markNotificationRead: (id: string) => Promise<void>;
   markAllNotificationsRead: () => Promise<void>;
+  clearAllNotifications: () => Promise<void>;
   resetDemo: () => Promise<void>;
   deleteAccount: () => Promise<{ ok: boolean; error?: string }>;
   teamActivity: AppNotification[];
@@ -249,7 +250,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   async function loadChats(workspaceId: string, userId: string) {
     try {
-      const list = await api.get<{ id: string }[]>('/api/conversations');
+      const list = await api.get<{ id: string }[]>(
+        `/api/conversations?workspaceId=${encodeURIComponent(workspaceId)}`
+      );
       const detailed = await Promise.all(
         list.map((c) =>
           api
@@ -330,6 +333,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
   }
 
+    async function clearAllNotifications() {
+    setState((s) => ({ ...s, notifications: [] }));
+    try {
+      await api.delete('/api/notifications/clear-all');
+    } catch (e) {
+      console.error('Failed to clear notifications:', e instanceof ApiError ? e.message : e);
+    }
+  }
+
   async function markAllNotificationsRead() {
     setState((s) => ({
       ...s,
@@ -337,8 +349,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }));
     try {
       await api.patch('/api/notifications/read-all');
-    } catch {
-      /* best effort */
+    } catch (e) {
+      console.error('Failed to mark all notifications read:', e instanceof ApiError ? e.message : e);
     }
   }
 
@@ -847,6 +859,7 @@ function deleteChat(id: string) {
     unreadNotificationCount,
     markNotificationRead,
     markAllNotificationsRead,
+    clearAllNotifications,
     resetDemo,
     deleteAccount,
     teamActivity,

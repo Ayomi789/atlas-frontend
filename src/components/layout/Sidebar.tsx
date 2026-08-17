@@ -32,9 +32,7 @@ const workspaceNav = [
 
 export function Sidebar() {
   const { state, currentUser, currentWorkspace, setWorkspace, createWorkspace } = useStore();
-  const userWorkspaces = state.workspaces.filter((w) =>
-  state.members.some((m) => m.workspaceId === w.id && m.userId === currentUser?.id)
-);
+  const userWorkspaces = state.workspaces;
   const [createOpen, setCreateOpen] = useState(false);
   const [name, setName] = useState('');
   const [desc, setDesc] = useState('');
